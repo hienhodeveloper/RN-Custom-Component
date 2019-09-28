@@ -1,0 +1,132 @@
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import {
+    StyleSheet,
+    TouchableOpacity,
+    Animated,
+    Text,
+    View
+} from 'react-native';
+
+const AppSwitch = ({
+    squareSize = 30,
+    titleStyle,
+    width,
+    height,
+    style,
+    containerStyle,
+    toggleStyle,
+    containerColor = "#4E4E4E",
+    toggleColor = "white",
+    value = false,
+    padding = 3, // between Toogle and Container
+    duration = 300,
+    onChangeValue,
+    disabled = false,
+    disabledColor = "rgba(255,255,255,0.8)",
+    title
+}) => {
+    /*------------------------> Define Variables <------------------------*/
+    const hasTitle = title && typeof title == 'string' && title.length > 0
+    const wWidth = width || squareSize * 2.5
+    const [isSwitch, setIsSwitch] = useState(value)
+    const [moveXAnimation, setMoveXAnimatiopn] = useState(new Animated.Value(0))
+
+    /*------------------------> Define Variables  <------------------------*/
+
+    /*------------------------> Define Function <------------------------*/
+
+    const onPressMove = useCallback(() => {
+        setIsSwitch(!isSwitch)
+        if (onChangeValue != null && typeof onChangeValue == 'function') {
+            onChangeValue(!isSwitch)
+        }
+    }, [isSwitch]);
+
+    /*------------------------> End Define Function <------------------------*/
+
+    /*------------------------> Life Cycle <------------------------*/
+
+    useEffect(() => {
+        console.log('AppSwitch - Did Mount')
+        return () => {
+            // almost same as componentWillUnmount
+            console.log('AppSwitch - UnMount!');
+        };
+    }, [])
+
+    useEffect(() => {
+        Animated.timing(moveXAnimation, {
+            toValue: isSwitch ? 1 : 0,
+            duration: duration,
+        }).start();
+
+    }, [isSwitch])
+
+    /*------------------------> End Life Cycle <------------------------*/
+
+    /*------------------------> Render UI <------------------------*/
+    return (
+        <View style={[style, {
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexDirection: 'row',
+            alignSelf: hasTitle ? 'auto' : 'baseline'
+        }]}>
+            {hasTitle && <Text
+                style={[styles.title, titleStyle]}
+                numberOfLines={1}
+                ellipsizeMode='tail'
+            >
+                {title}
+            </Text>}
+            <TouchableOpacity
+                activeOpacity={1}
+                style={[
+                    containerStyle,
+                    styles.container, {
+                        height: height || squareSize + padding * 2,
+                        width: wWidth,
+                        backgroundColor: containerColor,
+                        paddingHorizontal: padding
+                    }]}
+                onPress={onPressMove}
+            >
+                <Animated.View
+                    style={[
+                        toggleStyle,
+                        {
+                            height: squareSize,
+                            width: squareSize,
+                            backgroundColor: toggleColor,
+                            transform: [{
+                                translateX: moveXAnimation.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0, squareSize * 2.5 - squareSize - padding * 2]
+                                }),
+                            }],
+                        }]}
+                />
+
+            </TouchableOpacity>
+            {disabled && <View style={{
+                backgroundColor: disabledColor,
+                height: height || squareSize + padding * 2,
+                width: wWidth, position: 'absolute'
+            }} />}
+        </View>
+
+    );
+    /*------------------------> End Render UI <------------------------*/
+};
+
+const styles = StyleSheet.create({
+    container: {
+        justifyContent: 'center',
+    },
+    title: {
+        width: "78%",
+        fontSize: 14
+    }
+});
+
+export default AppSwitch;
