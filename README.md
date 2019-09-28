@@ -7,3 +7,4 @@ App Switch:
 Features:
 + Move toggle Animation
 + Switch Toggle
++ Add Title + custom
