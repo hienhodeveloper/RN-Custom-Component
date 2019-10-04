@@ -1,0 +1,206 @@
+import React, { PureComponent } from "react";
+import { View } from "react-native";
+import PropTypes from "prop-types";
+import * as shape from "d3-shape";
+import Svg, { G, Path, Text } from "react-native-svg";
+
+class PieChart extends PureComponent {
+  state = {
+    height: 0,
+    width: 0,
+  };
+
+  _onLayout(event) {
+    const {
+      nativeEvent: {
+        layout: { height, width },
+      },
+    } = event;
+
+    this.setState({ height, width });
+  }
+
+  _calculateRadius(arg, max, defaultVal) {
+    if (typeof arg === "number") {
+      return (arg / 100) * max;
+    } else if (arg) {
+      return arg;
+    } else {
+      return defaultVal;
+    }
+  }
+
+  _findMiddlePoint = (index, arrWidthValue, maxRadius) => {
+    if (
+      !arrWidthValue ||
+      arrWidthValue.length == 0 ||
+      index > arrWidthValue.length
+    )
+      return maxRadius;
+    let right;
+    switch (index) {
+      case 0: {
+        right = arrWidthValue[1];
+        break;
+      }
+      case arrWidthValue.length - 1: {
+        right = arrWidthValue[arrWidthValue.length - 2];
+        break;
+      }
+      default: {
+        right = arrWidthValue[index + 1];
+        break;
+      }
+    }
+    let result;
+
+    result =
+      maxRadius - (right - arrWidthValue[index]) / 2 - this.props.paddingChart;
+
+    return result;
+  };
+  render() {
+    const {
+      data,
+      dataPoints,
+      labelRadius,
+      padAngle,
+      animate,
+      segmentWidths,
+      animationDuration,
+      style,
+      sort,
+      valueAccessor,
+      children,
+      startAngle,
+      endAngle,
+    } = this.props;
+
+    const { height, width } = this.state;
+
+    if (!data && dataPoints) {
+      throw `"dataPoints" have been renamed to "data" to better reflect the fact that it's an array of objects`;
+    }
+
+    if (data.length === 0) {
+      return <View style={style} />;
+    }
+
+    const maxRadius = Math.min(width, height) / 2;
+
+    if (Math.min(...data.map(obj => valueAccessor({ item: obj }))) < 0) {
+      console.error(
+        "don't pass negative numbers to pie-chart, it makes no sense!",
+      );
+    }
+
+    const _labelRadius = this._calculateRadius(labelRadius, maxRadius, 0);
+
+    const arcs = data.map((item, index) => {
+      const _outerRadius = this._findMiddlePoint(
+        index,
+        segmentWidths,
+        maxRadius,
+      );
+      const _innerRadius =
+        maxRadius - segmentWidths[index] - this.props.paddingChart;
+      const arc = shape
+        .arc()
+        .outerRadius(_outerRadius)
+        .innerRadius(_innerRadius)
+        .padAngle(padAngle); // Angle between sections
+
+      item.arc &&
+        Object.entries(item.arc).forEach(([key, value]) => {
+          if (typeof arc[key] === "function") {
+            if (typeof value === "string") {
+              arc[key]((value.split("%")[0] / 100) * _outerRadius);
+            } else {
+              arc[key](value);
+            }
+          }
+        });
+      return arc;
+    });
+
+    const labelArcs = data.map((item, index) => {
+      if (labelRadius) {
+        return shape
+          .arc()
+          .outerRadius(_labelRadius)
+          .innerRadius(_labelRadius)
+          .padAngle(padAngle);
+      }
+      return arcs[index];
+    });
+
+    const pieSlices = shape
+      .pie()
+      .value(d => valueAccessor({ item: d }))
+      // .sort(sort)
+      .sort((a, b) => true)(data);
+
+    return (
+      <View style={style}>
+        <View style={{ flex: 1 }} onLayout={event => this._onLayout(event)}>
+          {height > 0 && width > 0 && (
+            <Svg style={{ height, width }}>
+              {/* center the progress circle*/}
+              <G x={width / 2} y={height / 2}>
+                {pieSlices.map((slice, index) => {
+                  const { key, onPress, svg } = data[index];
+                  return (
+                    <Path
+                      key={key}
+                      onPress={onPress}
+                      {...svg}
+                      d={arcs[index](slice)}
+                      animate={animate}
+                      animationDuration={animationDuration}
+                    />
+                  );
+                })}
+
+                {children}
+              </G>
+            </Svg>
+          )}
+        </View>
+      </View>
+    );
+  }
+}
+
+PieChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      svg: PropTypes.object,
+      key: PropTypes.any.isRequired,
+      value: PropTypes.number,
+      arc: PropTypes.object,
+    }),
+  ).isRequired,
+  segmentWidths: PropTypes.arrayOf(PropTypes.number),
+  labelRadius: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  padAngle: PropTypes.number,
+  animate: PropTypes.bool,
+  animationDuration: PropTypes.number,
+  style: PropTypes.any,
+  sort: PropTypes.func,
+  valueAccessor: PropTypes.func,
+};
+
+PieChart.defaultProps = {
+  width: 100,
+  height: 100,
+  padAngle: 0.0,
+  startAngle: 0,
+  endAngle: Math.PI * 2,
+  valueAccessor: ({ item }) => item.value,
+  segmentWidths: [],
+  sort: (a, b) => b.value - a.value,
+  paddingChart: 4,
+};
+
+export default PieChart;
+
