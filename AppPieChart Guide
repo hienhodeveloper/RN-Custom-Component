@@ -1,0 +1,27 @@
+ <PieChart
+            style={{ height: responsiveHeight(170), width: responsiveWidth(170) }}
+            data={pieData}
+            segmentWidths={[15.5, 18, 13.5]} // grey,.blue,green
+          >
+            <TextSVG
+              x={0}
+              y={-responsiveHeight(5)}
+              fill={Colors.text}
+              fontSize={responsiveHeight(13.3)}
+              textAnchor="middle"
+              fontWeight="bold"
+              fontFamily={Fonts.type.semiBold}
+            >
+              {I18n.t(strings.totalIncome)}
+            </TextSVG>
+            <TextSVG
+              x={0}
+              y={responsiveHeight(16)}
+              fill={Colors.text}
+              fontSize={responsiveHeight(16.7)}
+              fontFamily={Fonts.type.medium}
+              textAnchor="middle"
+            >
+              {dataIncome}
+            </TextSVG>
+          </PieChart>
